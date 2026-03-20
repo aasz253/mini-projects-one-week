@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#1db954">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="description" content="Local Music Player - Play your music offline">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <title>Local Music Player</title>
+</head>
+<body data-theme="dark">
+    <div id="app">
+        <header class="app-header">
+            <div class="header-content">
+                <h1 class="app-title">Music Player</h1>
+                <button class="icon-btn search-btn" id="searchToggle" aria-label="Search">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <path d="M21 21l-4.35-4.35"></path>
+                    </svg>
+                </button>
+            </div>
+        </header>
+
+        <main class="main-content" id="mainContent">
+            <div class="page active" id="homePage">
+                <div class="add-music-prompt" id="addMusicPrompt">
+                    <div class="add-music-icon">
+                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <path d="M9 18V5l12-2v13"></path>
+                            <circle cx="6" cy="18" r="3"></circle>
+                            <circle cx="18" cy="16" r="3"></circle>
+                        </svg>
+                    </div>
+                    <h2>No Music Yet</h2>
+                    <p>Tap the button below to add songs from your device</p>
+                    <button class="btn btn-primary btn-large" id="addMusicBtn">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 5v14M5 12h14"></path>
+                        </svg>
+                        Add Music
+                    </button>
+                    <input type="file" id="addMusicInput" multiple accept="audio/*" style="display:none">
+                </div>
+
+                <section class="section" id="recentSection" style="display:none;">
+                    <h2 class="section-title">Recently Played</h2>
+                    <div class="horizontal-scroll" id="recentTracks"></div>
+                </section>
+
+                <section class="section" id="allSongsSection">
+                    <div class="section-header">
+                        <h2 class="section-title">All Songs</h2>
+                        <span class="song-count" id="songCount">0 songs</span>
+                    </div>
+                    <div class="song-list" id="allSongsList"></div>
+                </section>
+            </div>
+
+            <div class="page" id="foldersPage">
+                <div class="folder-list" id="folderList"></div>
+            </div>
+
+            <div class="page" id="playlistsPage">
+                <div class="playlist-header">
+                    <button class="btn btn-primary" id="createPlaylistBtn">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 5v14M5 12h14"></path>
+                        </svg>
+                        Create Playlist
+                    </button>
+                </div>
+                <div class="playlist-tabs">
+                    <button class="playlist-tab active" data-tab="my">My Playlists</button>
+                    <button class="playlist-tab" data-tab="favorites">Favorites</button>
+                    <button class="playlist-tab" data-tab="most-played">Most Played</button>
+                </div>
+                <div class="playlist-content" id="playlistContent">
+                    <div class="tab-content active" id="myPlaylists">
+                        <div class="playlist-grid" id="playlistGrid"></div>
+                    </div>
+                    <div class="tab-content" id="favoritesList">
+                        <div class="song-list" id="favoritesSongs"></div>
+                    </div>
+                    <div class="tab-content" id="mostPlayedList">
+                        <div class="song-list" id="mostPlayedSongs"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="page" id="settingsPage">
+                <div class="settings-group">
+                    <h3 class="settings-group-title">Playback</h3>
+                    <div class="setting-item">
+                        <span class="setting-label">Gapless Playback</span>
+                        <label class="toggle">
+                            <input type="checkbox" id="gaplessToggle">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <span class="setting-label">Crossfade (seconds)</span>
+                        <input type="range" class="range-input" id="crossfadeRange" min="0" max="10" value="0">
+                        <span class="range-value" id="crossfadeValue">0s</span>
+                    </div>
+                </div>
+
+                <div class="settings-group">
+                    <h3 class="settings-group-title">Appearance</h3>
+                    <div class="setting-item">
+                        <span class="setting-label">Theme</span>
+                        <select class="select-input" id="themeSelect">
+                            <option value="system">System Default</option>
+                            <option value="dark">Dark</option>
+                            <option value="light">Light</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="settings-group">
+                    <h3 class="settings-group-title">Audio</h3>
+                    <div class="setting-item">
+                        <span class="setting-label">Equalizer</span>
+                        <button class="btn btn-secondary" id="equalizerBtn">Open Equalizer</button>
+                    </div>
+                    <div class="setting-item">
+                        <span class="setting-label">Audio Focus</span>
+                        <label class="toggle">
+                            <input type="checkbox" id="audioFocusToggle" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="settings-group">
+                    <h3 class="settings-group-title">Library</h3>
+                    <div class="setting-item full-width">
+                        <button class="btn btn-primary" id="addFilesBtn" style="width:100%">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 5v14M5 12h14"></path>
+                            </svg>
+                            Add Music Files
+                        </button>
+                    </div>
+                    <input type="file" id="fileInput" multiple accept="audio/*" style="display:none">
+                    <div class="setting-item">
+                        <span class="setting-label">Songs in Library</span>
+                        <span class="setting-value" id="librarySongCount">0</span>
+                    </div>
+                    <button class="btn btn-danger" id="clearLibraryBtn">Clear Library</button>
+                </div>
+
+                <div class="settings-group">
+                    <h3 class="settings-group-title">Timer</h3>
+                    <div class="setting-item">
+                        <span class="setting-label">Sleep Timer</span>
+                        <button class="btn btn-secondary" id="sleepTimerBtn">Set Timer</button>
+                    </div>
+                    <div class="setting-item" id="sleepTimerDisplay" style="display: none;">
+                        <span class="setting-label">Time Remaining</span>
+                        <span class="setting-value" id="sleepTimerRemaining">--:--</span>
+                    </div>
+                </div>
+
+                <div class="settings-group">
+                    <h3 class="settings-group-title">About</h3>
+                    <p class="about-text">Local Music Player v1.0.0</p>
+                    <p class="about-text">A privacy-focused music player that works offline.</p>
+                </div>
+            </div>
+        </main>
+
+        <nav class="bottom-nav">
+            <button class="nav-item active" data-page="home">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"></path>
+                    <polyline points="9,22 9,12 15,12 15,22"></polyline>
+                </svg>
+                <span>Home</span>
+            </button>
+            <button class="nav-item" data-page="folders">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"></path>
+                </svg>
+                <span>Folders</span>
+            </button>
+            <button class="nav-item" data-page="playlists">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="8" y1="6" x2="21" y2="6"></line>
+                    <line x1="8" y1="12" x2="21" y2="12"></line>
+                    <line x1="8" y1="18" x2="21" y2="18"></line>
+                    <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                    <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                    <line x1="3" y1="18" x2="3.01" y2="18"></line>
+                </svg>
+                <span>Playlists</span>
+            </button>
+            <button class="nav-item" data-page="settings">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"></path>
+                </svg>
+                <span>Settings</span>
+            </button>
+        </nav>
+
+        <div class="mini-player hidden" id="miniPlayer">
+            <div class="mini-player-info">
+                <div class="mini-album-art" id="miniAlbumArt">
+                    <img src="" alt="Album Art" id="miniAlbumImg">
+                </div>
+                <div class="mini-track-info">
+                    <p class="mini-track-title" id="miniTrackTitle">No track playing</p>
+                    <p class="mini-track-artist" id="miniTrackArtist">---</p>
+                </div>
+            </div>
+            <div class="mini-player-controls">
+                <button class="icon-btn" id="miniPrevBtn" aria-label="Previous">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"></path>
+                    </svg>
+                </button>
+                <button class="icon-btn play-btn" id="miniPlayBtn" aria-label="Play">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor" id="miniPlayIcon">
+                        <path d="M8 5v14l11-7z"></path>
+                    </svg>
+                </button>
+                <button class="icon-btn" id="miniNextBtn" aria-label="Next">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"></path>
+                    </svg>
+                </button>
+            </div>
+            <div class="mini-progress" id="miniProgress">
+                <div class="mini-progress-bar" id="miniProgressBar"></div>
+            </div>
+        </div>
+
+        <div class="full-player-overlay" id="fullPlayerOverlay">
+            <div class="full-player">
+                <div class="full-player-header">
+                    <button class="icon-btn" id="collapsePlayerBtn" aria-label="Collapse">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    </button>
+                    <p class="now-playing-label">NOW PLAYING</p>
+                    <button class="icon-btn" id="moreOptionsBtn" aria-label="More options">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"></path>
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="full-album-art-container">
+                    <div class="full-album-art" id="fullAlbumArt">
+                        <img src="" alt="Album Art" id="fullAlbumImg">
+                        <canvas id="visualizerCanvas" class="visualizer"></canvas>
+                    </div>
+                </div>
+
+                <div class="full-track-info">
+                    <h2 class="full-track-title" id="fullTrackTitle">No track playing</h2>
+                    <p class="full-track-artist" id="fullTrackArtist">---</p>
+                </div>
+
+                <div class="full-progress-section">
+                    <div class="progress-bar" id="progressBar">
+                        <div class="progress-track">
+                            <div class="progress-fill" id="progressFill"></div>
+                            <div class="progress-thumb" id="progressThumb"></div>
+                        </div>
+                    </div>
+                    <div class="time-display">
+                        <span id="currentTime">0:00</span>
+                        <span id="totalTime">0:00</span>
+                    </div>
+                </div>
+
+                <div class="full-player-controls">
+                    <button class="icon-btn control-btn" id="shuffleBtn" aria-label="Shuffle">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="16 3 21 3 21 8"></polyline>
+                            <line x1="4" y1="20" x2="21" y2="3"></line>
+                            <polyline points="21 16 21 21 16 21"></polyline>
+                            <line x1="15" y1="15" x2="21" y2="21"></line>
+                            <line x1="4" y1="4" x2="9" y2="9"></line>
+                        </svg>
+                    </button>
+                    <button class="icon-btn control-btn" id="prevBtn" aria-label="Previous">
+                        <svg width="36" height="36" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"></path>
+                        </svg>
+                    </button>
+                    <button class="icon-btn play-btn-lg" id="playBtn" aria-label="Play">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor" id="playIcon">
+                            <path d="M8 5v14l11-7z"></path>
+                        </svg>
+                    </button>
+                    <button class="icon-btn control-btn" id="nextBtn" aria-label="Next">
+                        <svg width="36" height="36" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"></path>
+                        </svg>
+                    </button>
+                    <button class="icon-btn control-btn" id="repeatBtn" aria-label="Repeat">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="repeatIcon">
+                            <polyline points="17 1 21 5 17 9"></polyline>
+                            <path d="M3 11V9a4 4 0 014-4h14"></path>
+                            <polyline points="7 23 3 19 7 15"></polyline>
+                            <path d="M21 13v2a4 4 0 01-4 4H3"></path>
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="full-secondary-controls">
+                    <button class="icon-btn secondary-btn" id="favoriteBtn" aria-label="Favorite">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="heartIcon">
+                            <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"></path>
+                        </svg>
+                    </button>
+                    <div class="volume-control">
+                        <button class="icon-btn secondary-btn" id="volumeBtn" aria-label="Volume">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="volumeIcon">
+                                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                                <path d="M19.07 4.93a10 10 0 010 14.14M15.54 8.46a5 5 0 010 7.07"></path>
+                            </svg>
+                        </button>
+                        <input type="range" class="volume-slider" id="volumeSlider" min="0" max="100" value="100">
+                    </div>
+                    <button class="icon-btn secondary-btn" id="queueBtn" aria-label="Queue">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="8" y1="6" x2="21" y2="6"></line>
+                            <line x1="8" y1="12" x2="21" y2="12"></line>
+                            <line x1="8" y1="18" x2="21" y2="18"></line>
+                            <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                            <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                            <line x1="3" y1="18" x2="3.01" y2="18"></line>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="search-overlay" id="searchOverlay">
+            <div class="search-container">
+                <div class="search-header">
+                    <div class="search-input-wrapper">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <path d="M21 21l-4.35-4.35"></path>
+                        </svg>
+                        <input type="text" class="search-input" id="searchInput" placeholder="Search songs, artists, albums...">
+                    </div>
+                    <button class="btn btn-text" id="closeSearchBtn">Cancel</button>
+                </div>
+                <div class="search-results" id="searchResults">
+                    <p class="search-hint">Start typing to search</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="queue-overlay" id="queueOverlay">
+            <div class="queue-container">
+                <div class="queue-header">
+                    <h3>Queue</h3>
+                    <button class="icon-btn" id="closeQueueBtn" aria-label="Close">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    </button>
+                </div>
+                <div class="queue-list" id="queueList"></div>
+            </div>
+        </div>
+
+        <div class="equalizer-overlay" id="equalizerOverlay">
+            <div class="equalizer-container">
+                <div class="equalizer-header">
+                    <h3>Equalizer</h3>
+                    <button class="icon-btn" id="closeEqualizerBtn" aria-label="Close">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    </button>
+                </div>
+                <div class="preset-selector">
+                    <select class="select-input" id="eqPresetSelect">
+                        <option value="flat">Flat</option>
+                        <option value="bass">Bass Boost</option>
+                        <option value="treble">Treble Boost</option>
+                        <option value="vocal">Vocal</option>
+                        <option value="rock">Rock</option>
+                        <option value="pop">Pop</option>
+                        <option value="jazz">Jazz</option>
+                        <option value="classical">Classical</option>
+                        <option value="electronic">Electronic</option>
+                        <option value="custom">Custom</option>
+                    </select>
+                </div>
+                <div class="eq-bands">
+                    <div class="eq-band">
+                        <span class="eq-label">60Hz</span>
+                        <input type="range" class="eq-slider" id="eq60" min="-12" max="12" value="0">
+                        <span class="eq-value" id="eq60Value">0</span>
+                    </div>
+                    <div class="eq-band">
+                        <span class="eq-label">230Hz</span>
+                        <input type="range" class="eq-slider" id="eq230" min="-12" max="12" value="0">
+                        <span class="eq-value" id="eq230Value">0</span>
+                    </div>
+                    <div class="eq-band">
+                        <span class="eq-label">910Hz</span>
+                        <input type="range" class="eq-slider" id="eq910" min="-12" max="12" value="0">
+                        <span class="eq-value" id="eq910Value">0</span>
+                    </div>
+                    <div class="eq-band">
+                        <span class="eq-label">3.6kHz</span>
+                        <input type="range" class="eq-slider" id="eq3600" min="-12" max="12" value="0">
+                        <span class="eq-value" id="eq3600Value">0</span>
+                    </div>
+                    <div class="eq-band">
+                        <span class="eq-label">14kHz</span>
+                        <input type="range" class="eq-slider" id="eq14000" min="-12" max="12" value="0">
+                        <span class="eq-value" id="eq14000Value">0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="sleep-timer-modal" id="sleepTimerModal">
+            <div class="modal-content">
+                <h3>Sleep Timer</h3>
+                <div class="timer-options">
+                    <button class="timer-option" data-minutes="15">15 minutes</button>
+                    <button class="timer-option" data-minutes="30">30 minutes</button>
+                    <button class="timer-option" data-minutes="45">45 minutes</button>
+                    <button class="timer-option" data-minutes="60">1 hour</button>
+                    <button class="timer-option" data-minutes="90">1.5 hours</button>
+                    <button class="timer-option" data-minutes="120">2 hours</button>
+                </div>
+                <button class="btn btn-text" id="cancelTimerBtn">Cancel Timer</button>
+            </div>
+        </div>
+
+        <div class="playlist-modal" id="playlistModal">
+            <div class="modal-content">
+                <h3>Create Playlist</h3>
+                <input type="text" class="text-input" id="playlistNameInput" placeholder="Playlist name">
+                <div class="modal-actions">
+                    <button class="btn btn-text" id="cancelPlaylistBtn">Cancel</button>
+                    <button class="btn btn-primary" id="savePlaylistBtn">Create</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="folder-content-overlay" id="folderContentOverlay">
+            <div class="folder-content-container">
+                <div class="folder-content-header">
+                    <button class="icon-btn" id="closeFolderBtn" aria-label="Back">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M19 12H5M12 19l-7-7 7-7"></path>
+                        </svg>
+                    </button>
+                    <h3 class="folder-title" id="folderTitle">Folder</h3>
+                </div>
+                <div class="song-list" id="folderSongs"></div>
+            </div>
+        </div>
+
+        <div class="toast" id="toast">
+            <span id="toastMessage"></span>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

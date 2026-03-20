@@ -1,0 +1,19 @@
+{
+  "name": "alwaysfront",
+  "version": "1.0.0",
+  "description": "AlwaysFront - A modern To-Do List app for university students",
+  "main": "server/index.js",
+  "scripts": {
+    "client": "npm start --prefix client",
+    "server": "npm run dev --prefix server",
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "install-all": "npm install && cd client && npm install && cd ../server && npm install",
+    "build": "cd client && npm run build"
+  },
+  "keywords": ["todo", "student", "university", "productivity", "pomodoro"],
+  "author": "AlwaysFront Team",
+  "license": "MIT",
+  "dependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

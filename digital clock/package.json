@@ -1,0 +1,8 @@
+{
+  "name": "digital-clock",
+  "version": "1.0.0",
+  "description": "Digital clock with stopwatch, alarm, and day/night mode",
+  "scripts": {
+    "start": "npx serve ."
+  }
+}
