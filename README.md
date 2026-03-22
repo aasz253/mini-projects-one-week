@@ -85,12 +85,7 @@ Feel free to fork this repo or reach out for collaborations.
 
 ---
 
-### 🔹 PRO TIP (Next Steps)
-1. Add a **screenshot folder** in each project with `screenshot.png` → makes it visually appealing.  
-2. If any project has live demo → add links in the table.  
-3. Keep `.gitignore` updated (`node_modules/`, `.env`, `.vscode/`).  
 
----
 
 If you want, I can **rewrite this README with Markdown badges, emojis, and clickable live demo links** to make it **super professional and eye-catching for recruiters**.  
 
