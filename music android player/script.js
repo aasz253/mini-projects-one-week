@@ -577,6 +577,12 @@ const MusicApp = {
         const speedBtn = document.getElementById('speedBtn');
         const speedModal = document.getElementById('speedModal');
         const closeSpeedBtn = document.getElementById('closeSpeedBtn');
+        const toggleSpeedBtn = document.getElementById('toggleSpeedBtn');
+        
+        toggleSpeedBtn?.addEventListener('click', () => {
+            speedBtn.style.display = speedBtn.style.display === 'none' ? 'flex' : 'none';
+            toggleSpeedBtn.classList.toggle('active', speedBtn.style.display !== 'none');
+        });
         
         speedBtn?.addEventListener('click', () => {
             speedModal?.classList.add('active');

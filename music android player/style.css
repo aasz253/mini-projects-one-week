@@ -1022,6 +1022,10 @@ body {
     color: var(--error);
 }
 
+#toggleSpeedBtn.active {
+    color: var(--primary-color);
+}
+
 .volume-control {
     display: flex;
     align-items: center;
