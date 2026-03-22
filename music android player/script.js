@@ -106,6 +106,7 @@ const MusicPlayer = {
     isShuffled: false,
     repeatMode: 0,
     volume: 1,
+    playbackSpeed: 1,
     shuffleQueue: [],
     analyser: null,
     audioContext: null,
@@ -199,8 +200,10 @@ const MusicPlayer = {
         this.volume = Utils.localStorage.get('volume', 1);
         this.isShuffled = Utils.localStorage.get('shuffle', false);
         this.repeatMode = Utils.localStorage.get('repeatMode', 0);
+        this.playbackSpeed = Utils.localStorage.get('playbackSpeed', 1);
         if (this.audio) {
             this.audio.volume = this.volume;
+            this.audio.playbackRate = this.playbackSpeed;
         }
     },
 
@@ -208,6 +211,15 @@ const MusicPlayer = {
         Utils.localStorage.set('volume', this.volume);
         Utils.localStorage.set('shuffle', this.isShuffled);
         Utils.localStorage.set('repeatMode', this.repeatMode);
+        Utils.localStorage.set('playbackSpeed', this.playbackSpeed);
+    },
+
+    setPlaybackSpeed(speed) {
+        this.playbackSpeed = speed;
+        if (this.audio) {
+            this.audio.playbackRate = speed;
+        }
+        this.saveSettings();
     },
 
     async loadSong(song) {
@@ -219,6 +231,7 @@ const MusicPlayer = {
             } else if (song.path) {
                 this.audio.src = song.path;
             }
+            this.audio.playbackRate = this.playbackSpeed;
         } catch (error) {
             console.error('Error loading song:', error);
             Utils.showToast('Error loading song');
@@ -556,6 +569,62 @@ const MusicApp = {
         this.bindSettings();
         this.bindFolderView();
         this.bindAddMusic();
+        this.bindSpeedControl();
+        this.bindAddToPlaylist();
+    },
+
+    bindSpeedControl() {
+        const speedBtn = document.getElementById('speedBtn');
+        const speedModal = document.getElementById('speedModal');
+        const closeSpeedBtn = document.getElementById('closeSpeedBtn');
+        
+        speedBtn?.addEventListener('click', () => {
+            speedModal?.classList.add('active');
+        });
+        
+        closeSpeedBtn?.addEventListener('click', () => {
+            speedModal?.classList.remove('active');
+        });
+        
+        speedModal?.addEventListener('click', (e) => {
+            if (e.target === speedModal) {
+                speedModal.classList.remove('active');
+            }
+        });
+        
+        speedModal?.querySelectorAll('.speed-option').forEach(option => {
+            option.addEventListener('click', () => {
+                const speed = parseFloat(option.dataset.speed);
+                MusicPlayer.setPlaybackSpeed(speed);
+                
+                speedModal.querySelectorAll('.speed-option').forEach(o => o.classList.remove('active'));
+                option.classList.add('active');
+                
+                const speedLabel = document.getElementById('speedLabel');
+                if (speedLabel) speedLabel.textContent = `${speed}x`;
+                
+                speedModal.classList.remove('active');
+                Utils.showToast(`Playback speed: ${speed}x`);
+            });
+        });
+        
+        const speedLabel = document.getElementById('speedLabel');
+        if (speedLabel) speedLabel.textContent = `${MusicPlayer.playbackSpeed}x`;
+    },
+
+    bindAddToPlaylist() {
+        const modal = document.getElementById('addToPlaylistModal');
+        const closeBtn = document.getElementById('closeAddToPlaylistBtn');
+        
+        closeBtn?.addEventListener('click', () => {
+            modal?.classList.remove('active');
+        });
+        
+        modal?.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.classList.remove('active');
+            }
+        });
     },
 
     bindAddMusic() {
@@ -831,19 +900,34 @@ const MusicApp = {
 
     getFoldersFromSongs(songs) {
         const folders = new Map();
+        
         songs.forEach(song => {
-            const parts = song.path.split('/');
-            let currentPath = '';
-            parts.slice(0, -1).forEach(folderName => {
-                currentPath = currentPath ? `${currentPath}/${folderName}` : folderName;
-                if (!folders.has(currentPath)) {
-                    folders.set(currentPath, { path: currentPath, name: folderName, songCount: 0, songs: [] });
+            let folderName = 'All Songs';
+            let folderPath = 'all-songs';
+            
+            if (song.folder && song.folder !== 'root') {
+                folderName = song.folder;
+                folderPath = `folder-${song.folder}`;
+            } else if (song.path && song.path.includes('/')) {
+                const parts = song.path.split('/');
+                if (parts.length > 1) {
+                    folderName = parts[0];
+                    folderPath = `folder-${folderName}`;
                 }
-                folders.get(currentPath).songCount++;
-                folders.get(currentPath).songs.push(song);
-            });
+            }
+            
+            if (!folders.has(folderPath)) {
+                folders.set(folderPath, { path: folderPath, name: folderName, songCount: 0, songs: [] });
+            }
+            folders.get(folderPath).songCount++;
+            folders.get(folderPath).songs.push(song);
         });
-        return Array.from(folders.values());
+        
+        return Array.from(folders.values()).sort((a, b) => {
+            if (a.path === 'all-songs') return -1;
+            if (b.path === 'all-songs') return 1;
+            return a.name.localeCompare(b.name);
+        });
     },
 
     async getAllPlaylists() {
@@ -1025,7 +1109,12 @@ const MusicApp = {
 
     openPlaylist(playlistId) {
         const playlist = this.playlists.find(p => p.id === playlistId);
-        if (!playlist || playlist.songs.length === 0) return;
+        if (!playlist) return;
+        
+        if (playlist.songs.length === 0) {
+            Utils.showToast('This playlist is empty');
+            return;
+        }
         
         const playlistSongs = playlist.songs.map(id => this.songs.find(s => s.id === id)).filter(s => s);
         if (playlistSongs.length > 0) {
@@ -1085,6 +1174,13 @@ const MusicApp = {
                             <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"></path>
                         </svg>
                     </button>
+                    <button class="icon-btn action-btn more-btn" data-action="more" title="More">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                            <circle cx="12" cy="5" r="2"></circle>
+                            <circle cx="12" cy="12" r="2"></circle>
+                            <circle cx="12" cy="19" r="2"></circle>
+                        </svg>
+                    </button>
                 </div>
             </div>
         `;
@@ -1109,7 +1205,187 @@ const MusicApp = {
     handleSongAction(action, songId) {
         if (action === 'favorite') {
             this.toggleFavorite(songId);
+        } else if (action === 'more') {
+            this.showSongOptions(songId);
         }
+    },
+
+    showSongOptions(songId) {
+        const song = this.songs.find(s => s.id === songId);
+        if (!song) return;
+        
+        const overlay = document.createElement('div');
+        overlay.className = 'song-options-overlay';
+        overlay.innerHTML = `
+            <div class="song-options-content">
+                <div class="song-options-header">
+                    <img src="${song.albumArt}" alt="${song.title}" onerror="this.src='${Utils.getDefaultAlbumArt()}'">
+                    <div class="song-options-info">
+                        <p class="song-options-title">${this.escapeHtml(song.title)}</p>
+                        <p class="song-options-artist">${this.escapeHtml(song.artist)}</p>
+                    </div>
+                </div>
+                <div class="song-options-list">
+                    <button class="song-option" data-action="favorite">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="${song.favorite ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2">
+                            <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"></path>
+                        </svg>
+                        <span>${song.favorite ? 'Remove from Favorites' : 'Add to Favorites'}</span>
+                    </button>
+                    <button class="song-option" data-action="add-to-playlist">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                        <span>Add to Playlist</span>
+                    </button>
+                    <button class="song-option" data-action="play-next">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polygon points="5 4 15 12 5 20 5 4"></polygon>
+                            <line x1="19" y1="5" x2="19" y2="19"></line>
+                        </svg>
+                        <span>Play Next</span>
+                    </button>
+                    <button class="song-option" data-action="add-to-queue">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="8" y1="6" x2="21" y2="6"></line>
+                            <line x1="8" y1="12" x2="21" y2="12"></line>
+                            <line x1="8" y1="18" x2="21" y2="18"></line>
+                            <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                            <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                            <line x1="3" y1="18" x2="3.01" y2="18"></line>
+                        </svg>
+                        <span>Add to Queue</span>
+                    </button>
+                </div>
+                <button class="song-option-close" id="closeSongOptions">Cancel</button>
+            </div>
+        `;
+        
+        document.body.appendChild(overlay);
+        requestAnimationFrame(() => overlay.classList.add('active'));
+        
+        const closeOptions = () => {
+            overlay.classList.remove('active');
+            setTimeout(() => overlay.remove(), 300);
+        };
+        
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay || e.target.id === 'closeSongOptions') {
+                closeOptions();
+            }
+        });
+        
+        overlay.querySelectorAll('.song-option').forEach(option => {
+            option.addEventListener('click', async () => {
+                const action = option.dataset.action;
+                if (action === 'favorite') {
+                    await this.toggleFavorite(songId);
+                } else if (action === 'add-to-playlist') {
+                    this.showAddToPlaylistModal(songId);
+                } else if (action === 'play-next') {
+                    this.playSongNext(songId);
+                } else if (action === 'add-to-queue') {
+                    this.addSongToQueue(songId);
+                }
+                closeOptions();
+            });
+        });
+    },
+
+    showAddToPlaylistModal(songId) {
+        const song = this.songs.find(s => s.id === songId);
+        if (!song) return;
+        
+        this.pendingSongForPlaylist = songId;
+        const modal = document.getElementById('addToPlaylistModal');
+        const titleEl = document.getElementById('modalSongTitle');
+        const listEl = document.getElementById('playlistSelectList');
+        
+        titleEl.textContent = song.title;
+        
+        if (this.playlists.length === 0) {
+            listEl.innerHTML = '<p style="color: var(--text-secondary); padding: 16px; text-align: center;">No playlists yet. Create one first!</p>';
+        } else {
+            listEl.innerHTML = this.playlists.map(playlist => `
+                <button class="playlist-select-item" data-playlist-id="${playlist.id}">
+                    <img src="${playlist.coverImage}" alt="${playlist.name}" onerror="this.style.display='none'">
+                    <span>${this.escapeHtml(playlist.name)}</span>
+                    <span class="playlist-song-count">${playlist.songs.length} songs</span>
+                </button>
+            `).join('');
+            
+            listEl.querySelectorAll('.playlist-select-item').forEach(item => {
+                item.addEventListener('click', async () => {
+                    await this.addSongToPlaylist(item.dataset.playlistId, this.pendingSongForPlaylist);
+                    modal.classList.remove('active');
+                });
+            });
+        }
+        
+        modal.classList.add('active');
+    },
+
+    async addSongToPlaylist(playlistId, songId) {
+        const playlist = this.playlists.find(p => p.id === playlistId);
+        const song = this.songs.find(s => s.id === songId);
+        
+        if (!playlist || !song) return;
+        
+        if (!playlist.songs.includes(songId)) {
+            playlist.songs.push(songId);
+            
+            return new Promise((resolve, reject) => {
+                const transaction = this.db.transaction('playlists', 'readwrite');
+                const store = transaction.objectStore('playlists');
+                const request = store.put(playlist);
+                request.onsuccess = () => {
+                    Utils.showToast(`Added to ${playlist.name}`);
+                    resolve();
+                };
+                request.onerror = () => reject(request.error);
+            });
+        } else {
+            Utils.showToast('Song already in playlist');
+        }
+    },
+
+    async removeSongFromPlaylist(playlistId, songId) {
+        const playlist = this.playlists.find(p => p.id === playlistId);
+        if (!playlist) return;
+        
+        const index = playlist.songs.indexOf(songId);
+        if (index > -1) {
+            playlist.songs.splice(index, 1);
+            
+            return new Promise((resolve, reject) => {
+                const transaction = this.db.transaction('playlists', 'readwrite');
+                const store = transaction.objectStore('playlists');
+                const request = store.put(playlist);
+                request.onsuccess = () => {
+                    Utils.showToast('Removed from playlist');
+                    resolve();
+                };
+                request.onerror = () => reject(request.error);
+            });
+        }
+    },
+
+    playSongNext(songId) {
+        const song = this.songs.find(s => s.id === songId);
+        if (!song) return;
+        
+        const currentIndex = MusicPlayer.queueIndex;
+        MusicPlayer.queue.splice(currentIndex + 1, 0, song);
+        Utils.showToast('Will play next');
+    },
+
+    addSongToQueue(songId) {
+        const song = this.songs.find(s => s.id === songId);
+        if (!song) return;
+        
+        MusicPlayer.queue.push(song);
+        Utils.showToast('Added to queue');
     },
 
     async toggleFavorite(songId) {
@@ -1351,26 +1627,46 @@ const MusicApp = {
     async addFilesToLibrary(files) {
         Utils.showToast(`Adding ${files.length} files...`);
         
+        const folderMap = new Map();
+        
         for (let i = 0; i < files.length; i++) {
             const file = files[i];
-            const song = {
-                id: Utils.generateId(),
-                title: Utils.getFileNameWithoutExtension(file.name),
-                artist: 'Unknown Artist',
-                album: 'Unknown Album',
-                duration: 0,
-                path: file.name,
-                fileUrl: URL.createObjectURL(file),
-                fileName: file.name,
-                albumArt: Utils.getDefaultAlbumArt(),
-                size: file.size,
-                lastModified: file.lastModified,
-                addedAt: Date.now(),
-                lastPlayed: null,
-                playCount: 0,
-                favorite: false
-            };
-            await this.saveSong(song);
+            let folderName = 'All Songs';
+            
+            if (file.webkitRelativePath && file.webkitRelativePath.includes('/')) {
+                folderName = file.webkitRelativePath.split('/')[0];
+            }
+            
+            if (!folderMap.has(folderName)) {
+                folderMap.set(folderName, []);
+            }
+            folderMap.get(folderName).push(file);
+        }
+        
+        let songCount = 0;
+        for (const [folderName, folderFiles] of folderMap) {
+            for (const file of folderFiles) {
+                const song = {
+                    id: Utils.generateId(),
+                    title: Utils.getFileNameWithoutExtension(file.name),
+                    artist: 'Unknown Artist',
+                    album: 'Unknown Album',
+                    duration: 0,
+                    path: file.name,
+                    folder: folderName,
+                    fileUrl: URL.createObjectURL(file),
+                    fileName: file.name,
+                    albumArt: Utils.getDefaultAlbumArt(),
+                    size: file.size,
+                    lastModified: file.lastModified,
+                    addedAt: Date.now(),
+                    lastPlayed: null,
+                    playCount: 0,
+                    favorite: false
+                };
+                await this.saveSong(song);
+                songCount++;
+            }
         }
         
         this.songs = await this.getAllSongs();
@@ -1384,7 +1680,8 @@ const MusicApp = {
         this.renderAllSongs();
         this.renderFolders();
         this.renderRecentTracks();
-        Utils.showToast(`Added ${files.length} songs!`);
+        this.renderFavorites();
+        Utils.showToast(`Added ${songCount} songs!`);
     },
 
     async clearLibrary() {
